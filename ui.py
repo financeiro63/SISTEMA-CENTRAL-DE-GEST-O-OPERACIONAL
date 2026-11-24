@@ -26,8 +26,8 @@ CSS = f"""
 }}
 .card.alerta {{ border-left-color:{AMARELO}; }}
 .card.inativo {{ border-left-color:#C9D2DF; opacity:.65; }}
-.card .rotulo {{ font-size:.82rem; color:#5B6B82; }}
-.card .valor {{ font-size:1.6rem; font-weight:700; color:#1A2433; }}
+.card .rotulo {{ font-size:.80rem; color:#5B6B82; line-height:1.2; }}
+.card .valor {{ font-size:clamp(1.05rem, 1.6vw, 1.6rem); font-weight:700; color:#1A2433; white-space:nowrap; }}
 .card .nota {{ font-size:.72rem; color:#8794A8; }}
 </style>
 """
