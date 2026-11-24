@@ -11,7 +11,7 @@ import db
 AZUL = "#0B4F9C"
 AMARELO = "#F5C400"
 
-UNIDADES_MEDIDA = ["un", "cx", "pct", "fd", "rl", "par", "kit", "l", "ml", "kg", "g", "m", "galão", "frasco"]
+UNIDADES_MEDIDA = ["un", "cx", "pct", "fd", "rl", "par", "kit", "l", "ml", "kg", "g", "m", "galão", "frasco", "balde"]
 
 CSS = f"""
 <style>
@@ -58,6 +58,14 @@ def filtro_unidade(chave: str, incluir_central: bool = False):
     if escolha == "Todas as unidades":
         return None, escolha
     return int(df.loc[df["nome"] == escolha, "id"].iloc[0]), escolha
+
+
+def moeda(v) -> str:
+    """Formata no padrão brasileiro: R$ 1.234,56"""
+    try:
+        return "R$ " + f"{float(v):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except (TypeError, ValueError):
+        return "—"
 
 
 def somente_numeros(txt: str | None) -> str:

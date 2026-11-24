@@ -8,7 +8,7 @@ st.set_page_config(page_title="Gestão Operacional · Manta", page_icon="🏊", 
 import auth  # noqa: E402
 import db  # noqa: E402
 import ui  # noqa: E402
-from telas import backup, conta, dashboard, fornecedores, produtos, unidades, usuarios  # noqa: E402
+from telas import backup, conta, dashboard, fornecedores, itens, notas, produtos, unidades, usuarios  # noqa: E402
 
 ui.aplicar_estilo()
 
@@ -16,6 +16,7 @@ ui.aplicar_estilo()
 try:
     existe_usuario = db.query_one("select 1 as ok from usuarios limit 1") is not None
 except Exception as erro:
+    db.get_engine.clear()  # descarta a conexão antiga: o próximo F5 já lê os Secrets novos
     st.error("Não foi possível conectar ao banco de dados. Confira os Secrets do app "
              "(seção [database]) e se o schema.sql foi executado no Supabase.")
     with st.expander("Detalhe técnico"):
@@ -51,6 +52,8 @@ if usuario.get("trocar_senha"):
 P = st.Page
 paginas = {
     "Principal": [P(dashboard.render, title="Dashboard", icon="📊", default=True)],
+    "Compras": [P(notas.render, title="Notas Fiscais", icon="🧾", url_path="notas"),
+                P(itens.render, title="Itens comprados", icon="🛒", url_path="itens")],
     "Cadastros": [
         P(unidades.render, title="Unidades", icon="🏢", url_path="unidades"),
         P(produtos.render, title="Produtos", icon="📦", url_path="produtos"),

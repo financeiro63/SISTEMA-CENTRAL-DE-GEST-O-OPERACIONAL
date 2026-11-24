@@ -11,7 +11,7 @@ import db
 import ui
 
 TABELAS = ["locais", "usuarios", "categorias", "fornecedores", "fornecedor_categorias",
-           "produtos", "estoque_saldos", "log_acoes"]
+           "produtos", "estoque_saldos", "nfe", "nfe_itens", "produto_codigos", "log_acoes"]
 
 
 def render():

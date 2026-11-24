@@ -46,13 +46,64 @@ def render():
     with e:
         ui.card("Produtos em falta", len(em_falta), "saldo zerado", "alerta" if len(em_falta) else "")
 
+    # ---- Compras do mês (NFs) -----------------------------------------
+    filtro_nf = "" if unidade_id is None else "and n.unidade_id = :u"
+    meses = db.query(f"""select distinct to_char(data_emissao, 'YYYY-MM') as mes
+                         from nfe n where 1=1 {filtro_nf} order by 1 desc""", params)["mes"].tolist()
+    st.subheader("Compras (NFs lançadas)")
+    if not meses:
+        st.info("Nenhuma NF lançada ainda.")
+    else:
+        rot = {m: f"{['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][int(m[5:])]}/{m[:4]}"
+               for m in meses}
+        mes = st.selectbox("Mês de emissão", meses, format_func=rot.get, key="dash_mes")
+        nf = db.query(
+            f"""select l.nome as unidade, coalesce(nullif(f.nome_fantasia, ''), f.razao_social) as fornecedor,
+                       n.tipo, n.valor_total::float as valor, n.conferir
+                from nfe n join locais l on l.id = n.unidade_id
+                join fornecedores f on f.id = n.fornecedor_id
+                where to_char(n.data_emissao, 'YYYY-MM') = :m {filtro_nf}""",
+            {**params, "m": mes})
+        idx = meses.index(mes)
+        anterior = None
+        if idx + 1 < len(meses):
+            anterior = db.query_one(
+                f"""select coalesce(sum(valor_total), 0)::float as v from nfe n
+                    where to_char(data_emissao, 'YYYY-MM') = :m {filtro_nf}""",
+                {**params, "m": meses[idx + 1]})["v"]
+        total = nf["valor"].sum()
+        var = ""
+        if anterior:
+            var = f"{(total / anterior - 1) * 100:+.0f}% vs {rot[meses[idx + 1]]}"
+        a, b, c, d = st.columns(4)
+        with a:
+            ui.card("Compras no mês", len(nf), "NFs lançadas")
+        with b:
+            ui.card("Valor total comprado", ui.moeda(total), var)
+        with c:
+            ui.card("Produtos / Serviços",
+                    f"{ui.moeda(nf.loc[nf['tipo'] == 'produto', 'valor'].sum())}",
+                    f"serviços: {ui.moeda(nf.loc[nf['tipo'] == 'servico', 'valor'].sum())}")
+        with d:
+            n_c = int(nf["conferir"].sum())
+            ui.card("NFs a conferir", n_c, "divergências", "alerta" if n_c else "")
+        g1, g2 = st.columns(2)
+        with g1:
+            st.caption("Gastos por unidade")
+            st.bar_chart(nf.groupby("unidade", as_index=False)["valor"].sum()
+                           .sort_values("valor", ascending=False),
+                         x="unidade", y="valor", color=ui.AZUL, horizontal=True)
+        with g2:
+            st.caption("Gastos por fornecedor")
+            st.bar_chart(nf.groupby("fornecedor", as_index=False)["valor"].sum()
+                           .sort_values("valor", ascending=False),
+                         x="fornecedor", y="valor", color=ui.AMARELO, horizontal=True)
+
     # ---- Indicadores das próximas fases (estrutura já reservada) ----
-    st.subheader("Operação do mês")
+    st.subheader("Próximos módulos")
     futuros = [
-        ("Compras realizadas no mês", "Fase 2"), ("Valor total comprado", "Fase 2"),
-        ("Solicitações pendentes", "Fase 2"), ("NFe aguardando lançamento", "Fase 2"),
-        ("Solicitações em andamento", "Fase 2"), ("Manutenções pendentes", "Fase 3"),
-        ("Consumo de materiais", "Fase 3"), ("Gastos por fornecedor", "Fase 4"),
+        ("Solicitações pendentes", "Fase 2"), ("Solicitações em andamento", "Fase 2"),
+        ("Manutenções pendentes", "Fase 3"), ("Consumo de materiais", "Fase 3"),
     ]
     cols = st.columns(4)
     for i, (rotulo, fase) in enumerate(futuros):
